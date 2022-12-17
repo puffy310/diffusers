@@ -33,6 +33,7 @@ logger = get_logger(__name__)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
+    parser.add_argument("--train_text_encoder", action="store_true", help="Whether to train the text encoder")
     parser.add_argument(
         "--pretrained_model_name_or_path",
         type=str,
@@ -394,7 +395,7 @@ def main():
 
     # Freeze vae and text_encoder
     vae.requires_grad_(False)
-    text_encoder.requires_grad_(False)
+    text_encoder.requires_grad_(True)
 
     if args.gradient_checkpointing:
         unet.enable_gradient_checkpointing()
@@ -418,6 +419,7 @@ def main():
         optimizer_cls = torch.optim.AdamW
 
     optimizer = optimizer_cls(
+        textencoder.parameters(),
         unet.parameters(),
         lr=args.learning_rate,
         betas=(args.adam_beta1, args.adam_beta2),
@@ -611,6 +613,7 @@ def main():
     progress_bar.set_description("Steps")
 
     for epoch in range(first_epoch, args.num_train_epochs):
+        text_encoder.train()
         unet.train()
         train_loss = 0.0
         for step, batch in enumerate(train_dataloader):
